@@ -30,8 +30,10 @@ jobs:
         
       - name: check ls status
         run: |
-          ls -ls
-          pwd
+          sudo rsync -av --delete dist/ /var/www/demo-react/
+          sudo chown -R root:root /var/www/demo-react
+          ls -la /var/www/demo-react
+        
 
       # 5️⃣ Upload to EC2 as normal user into a temp folder
       # - name: Upload build to temp folder
