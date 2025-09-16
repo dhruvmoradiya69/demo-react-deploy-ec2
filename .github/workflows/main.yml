@@ -252,7 +252,7 @@ jobs:
         uses: burnett01/rsync-deployments@6.0.0
         with:
           switches: -avz --delete
-          path: build/
+          path: dist/
           remote_path: /home/frontend/dist
           remote_host: ${{ secrets.EC2_HOST }}
           remote_user: ubuntu
