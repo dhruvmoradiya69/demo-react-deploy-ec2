@@ -1,44 +1,43 @@
-name: Deploy React App
+# name: Deploy React App
 
-on:
-  push:
-    branches:
-      - main  # runs when you push to main
+# on:
+#   push:
+#     branches:
+#       - main  # runs when you push to main
 
-jobs:
-  build-and-deploy:
-    runs-on: self-hosted
+# jobs:
+#   build-and-deploy:
+#     runs-on: self-hosted
 
-    steps:
-      # 1️⃣ Checkout the code
-      - name: Checkout code
-        uses: actions/checkout@v5
+#     steps:
+#       # 1️⃣ Checkout the code
+#       - name: Checkout code
+#         uses: actions/checkout@v5
 
-      # 2️⃣ Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22'
+#       # 2️⃣ Setup Node.js
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v5
+#         with:
+#           node-version: '22'
 
-      # 3️⃣ Install dependencies
-      - name: Install dependencies
-        run: |
-          node -v
-          which node
-          npm install
+#       # 3️⃣ Install dependencies
+#       - name: Install dependencies
+#         run: |
+#           node -v
+#           which node
+#           npm install
 
-      # 4️⃣ Build project
-      - name: Build project
-        run: npm run build
+#       # 4️⃣ Build project
+#       - name: Build project
+#         run: npm run build
         
-      - name: check ls status
-        run: |
-          echo "###############| copy to dest |####################"
-          sudo rsync -av --delete dist/ /var/www/demo-react/
-          echo "#####################################"
-          sudo chown -R root:root /var/www/demo-react
-          echo "############################"
-          ls -la /var/www/demo-react
+#       - name: check ls status
+#         run: |
+#           echo "###############| copy to dest |####################"
+#           sudo rsync -av --delete dist/ /var/www/demo-react/
+#           echo "#####################################"
+#           sudo chown -R root:root /var/www/demo-react
+#           ls -la /var/www/demo-react
         
 
       # 5️⃣ Upload to EC2 as normal user into a temp folder
@@ -64,3 +63,61 @@ jobs:
       #       sudo mkdir -p /var/www/demo-react
       #       sudo rsync -avz --delete /tmp/deploy/ /var/www/demo-react/
       #       sudo rm -rf /tmp/deploy
+
+
+name: Deploy React App to EC2 via RSYNC
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # 4️⃣ Build project
+      - name: Build project
+        run: npm run build
+
+      # 5️⃣ Setup SSH key
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      # 6️⃣ Deploy using RSYNC
+      - name: Deploy with RSYNC
+        run: |
+          rsync -avz --delete \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            ./dist/ \
+            ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:/var/www/demo-react/
+
+      # 7️⃣ Set permissions and restart services
+      - name: Set permissions and restart services
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} << 'EOF'
+            sudo chown -R www-data:www-data /var/www/demo-react
+            sudo chmod -R 755 /var/www/demo-react
+            sudo systemctl reload nginx || sudo systemctl reload apache2 || true
+            echo "Deployment completed!"
+          EOF
