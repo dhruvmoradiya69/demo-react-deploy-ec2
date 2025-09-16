@@ -22,7 +22,9 @@ jobs:
 
       # 3️⃣ Install dependencies
       - name: Install dependencies
-        run: npm install
+        run: |
+          node -v
+          npm install
 
       # 4️⃣ Build project
       - name: Build project
