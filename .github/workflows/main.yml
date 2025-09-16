@@ -24,6 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           node -v
+          which node
           npm install
 
       # 4️⃣ Build project
