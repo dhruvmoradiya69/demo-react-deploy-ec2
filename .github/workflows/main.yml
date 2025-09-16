@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       # 1️⃣ Checkout the code
@@ -27,26 +27,32 @@ jobs:
       # 4️⃣ Build project
       - name: Build project
         run: npm run build
+        
+      - name: check ls status
+        run: |
+          ls -ls
+          pwd
 
       # 5️⃣ Upload to EC2 as normal user into a temp folder
-      - name: Upload build to temp folder
-        uses: burnett01/rsync-deployments@7.1.0
-        with:
-          switches: -avz --delete
-          path: dist/
-          remote_path: /tmp/deploy
-          remote_host: ${{ secrets.EC2_HOST }}
-          remote_user: ${{ secrets.EC2_USER }}
-          remote_key: ${{ secrets.EC2_SSH_KEY }}
+      # - name: Upload build to temp folder
+      #   uses: burnett01/rsync-deployments@7.1.0
+      #   with:
+      #     switches: -avz --delete
+      #     path: dist/
+      #     remote_path: /var/www/demo-react/
+      #     remote_host: ${{ secrets.EC2_HOST }}
+      #     remote_user: ${{ secrets.EC2_USER }}
+      #     remote_key: ${{ secrets.EC2_SSH_KEY }}
 
-      # 6️⃣ Move files to /var/www/demo-react with sudo (keeps root:root)
-      - name: Move to /var/www/demo-react with sudo
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            sudo mkdir -p /var/www/demo-react
-            sudo rsync -avz --delete /tmp/deploy/ /var/www/demo-react/
-            sudo rm -rf /tmp/deploy
+
+      # # 6️⃣ Move files to /var/www/demo-react with sudo (keeps root:root)
+      # - name: Move to /var/www/demo-react with sudo
+      #   uses: appleboy/ssh-action@v0.1.10
+      #   with:
+      #     host: ${{ secrets.EC2_HOST }}
+      #     username: ${{ secrets.EC2_USER }}
+      #     key: ${{ secrets.EC2_SSH_KEY }}
+      #     script: |
+      #       sudo mkdir -p /var/www/demo-react
+      #       sudo rsync -avz --delete /tmp/deploy/ /var/www/demo-react/
+      #       sudo rm -rf /tmp/deploy
