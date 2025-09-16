@@ -65,14 +65,101 @@
       #       sudo rm -rf /tmp/deploy
 
 
-name: Deploy React App to EC2 via RSYNC
+# name: Deploy React App to EC2 via RSYNC
+
+# on:
+#   workflow_dispatch:
+#   push:
+#     branches:
+#       - main
+    
+
+# jobs:
+#   build-and-deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # 1️⃣ Checkout the code
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       # 2️⃣ Setup Node.js
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '22'
+#           cache: 'npm'
+
+#       # 3️⃣ Install dependencies
+#       - name: Install dependencies
+#         run: npm install
+
+#       # 4️⃣ Build project
+#       - name: Build project
+#         run: npm run build
+
+#       # 5️⃣ Setup SSH key
+#       - name: Setup SSH key
+#         run: |
+#           mkdir -p ~/.ssh
+#           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+#           chmod 600 ~/.ssh/id_rsa
+#           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+#       # 6️⃣ Deploy using RSYNC to temp directory first
+#       - name: Deploy with RSYNC
+#         run: |
+#           # Deploy to user's home directory first (has write permissions)
+#           rsync -avz --delete \
+#             -e "ssh -o StrictHostKeyChecking=no" \
+#             ./dist/ \
+#             ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/react-build/  
+
+#       # 7️⃣ Move files and set permissions
+#       - name: Move files and set permissions
+#         run: |
+#           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+#             # Backup current deployment (optional)
+#             sudo cp -r /var/www/demo-react /var/www/demo-react-backup-$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
+            
+#             # Remove old files
+#             sudo rm -rf /var/www/demo-react/*
+            
+#             # Copy new files from home directory to web directory
+#             sudo cp -r ~/react-build/* /var/www/demo-react/
+            
+#             # Set proper ownership and permissions
+#             sudo chown -R www-data:www-data /var/www/demo-react
+#             sudo chmod -R 755 /var/www/demo-react
+            
+#             # Clean up temp directory
+#             rm -rf ~/react-build
+            
+#             # Restart web server
+#             sudo systemctl reload nginx || sudo systemctl reload apache2 || true
+            
+#             echo "Deployment completed successfully!"
+#           EOF
+
+
+
+
+
+
+
+
+
+
+
+
+
+name: Deploy React App to EC2 via RSYNC Action
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
-    
 
 jobs:
   build-and-deploy:
@@ -106,34 +193,24 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # 6️⃣ Deploy using RSYNC to temp directory first
-      - name: Deploy with RSYNC
-        run: |
-          # Deploy to user's home directory first (has write permissions)
-          rsync -avz --delete \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            ./dist/ \
-            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/react-build/  
+      # 6️⃣ Deploy using rsync-deploy Action
+      - name: Deploy using rsync-deploy
+        uses: burnett01/rsync-deployments@5.2
+        with:
+          switches: -avzr --delete
+          path: dist/
+          remote_path: /var/www/demo-react/
+          remote_host: ${{ secrets.EC2_HOST }}
+          remote_user: ${{ secrets.EC2_USER }}
+          remote_key: ${{ secrets.EC2_SSH_KEY }}
 
       # 7️⃣ Move files and set permissions
-      - name: Move files and set permissions
+      - name: Set permissions and reload server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            # Backup current deployment (optional)
-            sudo cp -r /var/www/demo-react /var/www/demo-react-backup-$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
-            
-            # Remove old files
-            sudo rm -rf /var/www/demo-react/*
-            
-            # Copy new files from home directory to web directory
-            sudo cp -r ~/react-build/* /var/www/demo-react/
-            
             # Set proper ownership and permissions
             sudo chown -R www-data:www-data /var/www/demo-react
             sudo chmod -R 755 /var/www/demo-react
-            
-            # Clean up temp directory
-            rm -rf ~/react-build
             
             # Restart web server
             sudo systemctl reload nginx || sudo systemctl reload apache2 || true
