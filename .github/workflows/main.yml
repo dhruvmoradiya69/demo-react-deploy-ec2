@@ -33,8 +33,11 @@ jobs:
         
       - name: check ls status
         run: |
+          echo "###############| copy to dest |####################"
           sudo rsync -av --delete dist/ /var/www/demo-react/
+          echo "#####################################"
           sudo chown -R root:root /var/www/demo-react
+          echo "############################"
           ls -la /var/www/demo-react
         
 
