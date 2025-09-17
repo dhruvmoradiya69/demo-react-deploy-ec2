@@ -238,32 +238,9 @@ jobs:
           pwd          
 
       - name: Trivy scan (CRITICAL & HIGH)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-ref: /home/runner/work/demo-react-deploy-ec2/demo-react-deploy-ec2/
-          scan-type: fs
-          format: json
-          output: trivy-report.json
-          exit-code: '1'
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          vuln-type: os,library
-
-      - name: Generate Trivy Summary
-        if: always() # run even if vulnerabilities were found (to show summary)
         run: |
-          echo "### 🛡 Trivy Vulnerability Summary" >> $GITHUB_STEP_SUMMARY
-          if [ -s trivy-report.json ]; then
-            jq -r '
-              [
-                .Results[]?.Vulnerabilities[]? | .Severity
-              ] | group_by(.) | map({key: .[0], count: length}) |
-              from_entries
-            ' trivy-report.json | tee trivy-summary.json
-            cat trivy-summary.json | jq -r 'to_entries | .[] | "- \(.key): \(.value)"' >> $GITHUB_STEP_SUMMARY
-          else
-            echo "✅ No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
-          fi
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.18.3
+          trivy fs ./ --format table
 
       - name: Upload Trivy Report (Artifact)
         if: always()
