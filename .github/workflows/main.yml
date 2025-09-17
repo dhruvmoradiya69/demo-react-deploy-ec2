@@ -239,7 +239,7 @@ jobs:
       - name: trivy scan for fs
         uses: aquasecurity/trivy-action@0.28.0
         with:
-            scan-ref: ./
+            # scan-ref: ./
             scan-type: fs
             format: table
             exit-code: '0'
