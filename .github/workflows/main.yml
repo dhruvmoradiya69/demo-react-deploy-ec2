@@ -234,7 +234,9 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+            npm install
+            pwd          
 
       - name: trivy scan for fs
         uses: aquasecurity/trivy-action@0.28.0
@@ -246,6 +248,7 @@ jobs:
             severity: CRITICAL,HIGH
             ignore-unfixed: true
             vuln-type: os,library
+        
 
       - name: Build React app
         run: npm run build
