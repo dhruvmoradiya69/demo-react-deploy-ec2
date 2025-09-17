@@ -268,7 +268,8 @@ jobs:
           else
             echo "Deploying to main environment"
             echo "REMOTE_PATH=/home/frontend/dist" >> $GITHUB_ENV
-
+          fi
+      
       - name: Deploy with rsync
         uses: burnett01/rsync-deployments@7.1.0
         with:
