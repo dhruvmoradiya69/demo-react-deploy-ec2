@@ -226,10 +226,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -250,7 +250,7 @@ jobs:
             fi
 
       - name: Deploy with rsync
-        uses: burnett01/rsync-deployments@6.0.0
+        uses: burnett01/rsync-deployments@7.1.0
         with:
           switches: -avz --delete
           path: dist/
