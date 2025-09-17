@@ -209,7 +209,6 @@
 #           EOF
 
 
-
 name: Deploy React App to EC2 with rsync
 
 on:
@@ -234,21 +233,33 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          pwd          
+          pwd
 
       - name: Trivy scan (CRITICAL & HIGH)
         run: |
+          # Install Trivy
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
             | sh -s -- -b /usr/local/bin v0.56.1
+
+          # Run Trivy filesystem scan with exit code 1 on CRITICAL/HIGH
           trivy fs "${{ github.workspace }}" \
             --format table \
             --severity CRITICAL,HIGH \
             --ignore-unfixed \
-            --vuln-type os,library
+            --pkg-types os,library \
+            --exit-code 1 \
+            --output trivy-report.txt
+
+      - name: Upload Trivy Report Artifact
+        if: always()  # Always run even if vulnerabilities are found
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.txt
 
       - name: Build React app
         run: npm run build
-      
+
       - name: set-dev-main path
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
@@ -257,7 +268,6 @@ jobs:
           else
             echo "Deploying to main environment"
             echo "REMOTE_PATH=/home/frontend/dist" >> $GITHUB_ENV
-          fi
 
       - name: Deploy with rsync
         uses: burnett01/rsync-deployments@7.1.0
