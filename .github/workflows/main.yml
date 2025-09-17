@@ -210,7 +210,6 @@
 
 
 
-
 name: Deploy React App to EC2 with rsync
 
 on:
@@ -239,8 +238,13 @@ jobs:
 
       - name: Trivy scan (CRITICAL & HIGH)
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.18.3
-          trivy fs /home/runner/work/demo-react-deploy-ec2/demo-react-deploy-ec2 --format table
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b /usr/local/bin v0.56.1
+          trivy fs "${{ github.workspace }}" \
+            --format table \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --vuln-type os,library
 
       - name: Build React app
         run: npm run build
