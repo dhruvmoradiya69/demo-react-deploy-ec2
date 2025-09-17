@@ -211,7 +211,6 @@
 
 
 
-
 name: Deploy React App to EC2 with rsync
 
 on:
@@ -235,33 +234,56 @@ jobs:
 
       - name: Install dependencies
         run: |
-            npm install
-            pwd          
+          npm install
+          pwd          
 
-      - name: trivy scan for fs
+      - name: Trivy scan (CRITICAL & HIGH)
         uses: aquasecurity/trivy-action@0.28.0
         with:
-            scan-ref: /home/runner/work/demo-react-deploy-ec2/demo-react-deploy-ec2/
-            scan-type: fs
-            format: table
-            exit-code: '1'
-            severity: CRITICAL,HIGH
-            ignore-unfixed: true
-            vuln-type: os,library
-        
+          scan-ref: /home/runner/work/demo-react-deploy-ec2/demo-react-deploy-ec2/
+          scan-type: fs
+          format: json
+          output: trivy-report.json
+          exit-code: '1'
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          vuln-type: os,library
+
+      - name: Generate Trivy Summary
+        if: always() # run even if vulnerabilities were found (to show summary)
+        run: |
+          echo "### 🛡 Trivy Vulnerability Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -s trivy-report.json ]; then
+            jq -r '
+              [
+                .Results[]?.Vulnerabilities[]? | .Severity
+              ] | group_by(.) | map({key: .[0], count: length}) |
+              from_entries
+            ' trivy-report.json | tee trivy-summary.json
+            cat trivy-summary.json | jq -r 'to_entries | .[] | "- \(.key): \(.value)"' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Trivy Report (Artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.json
 
       - name: Build React app
         run: npm run build
       
       - name: set-dev-main path
         run: |
-            if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
-              echo "Deploying to development environment"
-              echo "REMOTE_PATH=/home/frontend/dev" >> $GITHUB_ENV
-            else
-              echo "Deploying to main environment"
-              echo "REMOTE_PATH=/home/frontend/dist" >> $GITHUB_ENV
-            fi
+          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            echo "Deploying to development environment"
+            echo "REMOTE_PATH=/home/frontend/dev" >> $GITHUB_ENV
+          else
+            echo "Deploying to main environment"
+            echo "REMOTE_PATH=/home/frontend/dist" >> $GITHUB_ENV
+          fi
 
       - name: Deploy with rsync
         uses: burnett01/rsync-deployments@7.1.0
@@ -281,4 +303,3 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             sudo systemctl reload nginx
-          
