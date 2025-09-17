@@ -208,10 +208,6 @@
 #             echo "Deployment completed successfully!"
 #           EOF
 
-
-
-
-
 name: Deploy React App to EC2 with rsync
 
 on:
@@ -234,20 +230,29 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          pwd
+
+      - name: Run Trivy vulnerability scanner (CRITICAL & HIGH)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          trivy-config: trivy.yaml
 
       - name: Build React app
         run: npm run build
-      
-      - name: set-dev-main path
+
+      - name: Set deployment path based on branch
         run: |
-            if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
-              echo "Deploying to development environment"
-              echo "REMOTE_PATH=/home/frontend/dev" >> $GITHUB_ENV
-            else
-              echo "Deploying to main environment"
-              echo "REMOTE_PATH=/home/frontend/dist" >> $GITHUB_ENV
-            fi
+          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            echo "Deploying to development environment"
+            echo "REMOTE_PATH=/home/frontend/dev" >> $GITHUB_ENV
+          else
+            echo "Deploying to main environment"
+            echo "REMOTE_PATH=/home/frontend/dist" >> $GITHUB_ENV
+          fi
 
       - name: Deploy with rsync
         uses: burnett01/rsync-deployments@7.1.0
@@ -267,4 +272,3 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             sudo systemctl reload nginx
-          
