@@ -212,48 +212,51 @@
 
 
 
-# name: Deploy React App to EC2 with rsync
+name: Deploy React App to EC2 with rsync
 
-# on:
-#   push:
-#     branches:
-#       - main
+on:
+  push:
+    branches:
+      - main
+      - dev
 
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
-#       - name: Setup Node.js
-#         uses: actions/setup-node@v3
-#         with:
-#           node-version: '22'
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
 
-#       - name: Install dependencies
-#         run: npm install
+      - name: Install dependencies
+        run: npm install
 
-#       - name: Build React app
-#         run: npm run build
+      - name: Build React app
+        run: npm run build
+      
+      
 
-#       - name: Deploy with rsync
-#         uses: burnett01/rsync-deployments@6.0.0
-#         with:
-#           switches: -avz --delete
-#           path: dist/
-#           remote_path: /home/frontend/dist
-#           remote_host: ${{ secrets.EC2_HOST }}
-#           remote_user: ubuntu
-#           remote_key: ${{ secrets.EC2_SSH_KEY }}
+      - name: Deploy with rsync
+        uses: burnett01/rsync-deployments@7.1.0
+        with:
+          switches: -avz --delete
+          path: dist/
+          remote_path: /home/frontend/dist
+          remote_host: ${{ secrets.EC2_HOST }}
+          remote_user: ubuntu
+          remote_key: ${{ secrets.EC2_SSH_KEY }}
 
-#       - name: Reload Nginx
-#         uses: appleboy/ssh-action@v1.0.3
-#         with:
-#           host: ${{ secrets.EC2_HOST }}
-#           username: ubuntu
-#           key: ${{ secrets.EC2_SSH_KEY }}
-#           script: |
-#             sudo systemctl reload nginx
+      - name: Reload Nginx
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo systemctl reload nginx
           
