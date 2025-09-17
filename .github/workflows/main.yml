@@ -244,7 +244,7 @@ jobs:
             scan-ref: /home/runner/work/demo-react-deploy-ec2/demo-react-deploy-ec2/
             scan-type: fs
             format: table
-            exit-code: '0'
+            exit-code: '1'
             severity: CRITICAL,HIGH
             ignore-unfixed: true
             vuln-type: os,library
