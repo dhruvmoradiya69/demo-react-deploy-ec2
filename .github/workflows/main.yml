@@ -240,7 +240,7 @@ jobs:
       
       - name: set-dev-main path
         run: |
-            if [[ "${github.ref}" == "refs/heads/dev" ]]; then
+            if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
               echo "Deploying to development environment"
               echo "REMOTE_PATH=/home/frontend/dev" >> $GITHUB_ENV
             else
